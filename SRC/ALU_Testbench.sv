@@ -172,8 +172,7 @@ class transaction;
   constraint a3{ CE == 1; IN_VALID == 2'b11;  }
   constraint a4{if(MODE == 1) CMD inside{[0:10]};}
   constraint a5{if(MODE	 == 0)CMD inside {[0:13]};}
-  constraint a6 {CMD == 9; MODE == 1;}
-  constraint a7 {OPA inside {[1:5]}; OPB inside {[1:6]};}
+
   
   //constraint set {CMD == 9;MODE ==1; OPA inside{[0:5]};OPB inside {[0:5]};}
   virtual function transaction copy();
@@ -194,6 +193,96 @@ class transaction;
     return copy;
   endfunction 
 endclass
+      
+      class trans_1 extends transaction;
+        constraint a6 {CMD == 9; MODE == 1;IN_VALID == 2'b11;}
+       constraint a7 {OPA inside {[1:5]}; OPB inside {[1:6]};}
+         virtual function transaction copy();
+           trans_1 copy1;
+    copy1 = new;
+    copy1.OPA = OPA;
+    copy1.OPB = OPB;
+    copy1.CMD = CMD;
+    copy1.IN_VALID = IN_VALID;
+    copy1.CE = CE;
+    copy1.MODE = MODE;
+    copy1.CIN = CIN;
+    copy1.RES = RES;
+    copy1.COUT = COUT;
+    copy1.OFLOW = OFLOW;
+    copy1.G = G;
+    copy1.E = E;
+    copy1.L = L;
+    return copy1;
+  endfunction 
+endclass
+        
+         class trans_2 extends transaction;
+           constraint a6 {CMD == 12; MODE == 0;IN_VALID == 2'b11;}
+         virtual function transaction copy();
+           trans_2 copy2;
+    copy2 = new;
+    copy2.OPA = OPA;
+    copy2.OPB = OPB;
+    copy2.CMD = CMD;
+    copy2.IN_VALID = IN_VALID;
+    copy2.CE = CE;
+    copy2.MODE = MODE;
+    copy2.CIN = CIN;
+    copy2.RES = RES;
+    copy2.COUT = COUT;
+    copy2.OFLOW = OFLOW;
+    copy2.G = G;
+    copy2.E = E;
+    copy2.L = L;
+    return copy2;
+  endfunction 
+endclass
+      
+      class trans_3 extends transaction;
+        constraint d1 { MODE == 1; CMD==8 ;IN_VALID ==2'b11 ;}
+      
+      virtual function transaction copy();
+              trans_3 copy3;
+    copy3=new();
+    copy3.OPA=OPA;
+    copy3.OPB=OPB;
+    copy3.CMD=CMD;
+    copy3.MODE=MODE;
+    copy3.CIN=CIN;
+    copy3.IN_VALID=IN_VALID;
+    copy3.G=G;
+    copy3.E=E;
+    copy3.L=L;
+    copy3.COUT=COUT;
+    copy3.ERR=ERR;
+    copy3.OFLOW=OFLOW;
+    return copy3;
+  endfunction
+    endclass
+    
+    class trans_4 extends transaction ;
+      constraint d2 {MODE==0;CMD==13;IN_VALID ==2'b11 ;}
+      
+      virtual function transaction copy();
+              trans_4 copy4;
+    copy4=new();
+    copy4.OPA=OPA;
+    copy4.OPB=OPB;
+    copy4.CMD=CMD;
+    copy4.MODE=MODE;
+    copy4.CIN=CIN;
+    copy4.IN_VALID = IN_VALID;
+    copy4.G=G;
+    copy4.E=E;
+    copy4.L=L;
+    copy4.COUT=COUT;
+    copy4.ERR=ERR;
+    copy4.OFLOW=OFLOW;
+    return copy4;
+  endfunction
+    endclass
+   
   //-----------------------------------------------------------------------------------------
   
 class Generator;
@@ -419,8 +508,8 @@ endclass
     for (int i = 0; i < `num; i++) begin
       mon_hand = new();
 
-      repeat(1)@(mon_intf.Mon_cb)
-      begin
+      repeat(1)@(mon_intf.Mon_cb);
+      
       mon_hand.RES   = mon_intf.Mon_cb.RES;
       mon_hand.ERR   = mon_intf.Mon_cb.ERR;
       mon_hand.COUT  = mon_intf.Mon_cb.COUT;
@@ -428,8 +517,8 @@ endclass
       mon_hand.G     = mon_intf.Mon_cb.G;
       mon_hand.E     = mon_intf.Mon_cb.E;
       mon_hand.L     = mon_intf.Mon_cb.L;
-      end
       mon2scb.put(mon_hand);
+
       $display("[%t]Monitor TO Scoreboard: RES=%0d, ERR=%d, COUT=%d, OFLOW=%d, G=%d, E=%d, L=%d opa=%0d opb=%0d",$time,
                 mon_hand.RES, mon_hand.ERR, mon_hand.COUT, mon_hand.OFLOW,
                 mon_hand.G, mon_hand.E, mon_hand.L,mon_hand.OPA,mon_hand.OPB);
@@ -788,8 +877,151 @@ endclass
       env.start();
     end
   endtask
-  
 endclass
+  
+      class test1 extends testbench;
+        trans_1 trans;
+        function new(virtual Alu_interface drv_intf,
+                     virtual Alu_interface mon_intf,
+                     virtual Alu_interface ref_intf);
+          super.new(drv_intf, mon_intf, ref_intf);
+        endfunction 
+        
+        task run();
+          $display("child test 1");
+          env = new(drv_intf, mon_intf, ref_intf);
+          env.build;
+          begin 
+            trans = new();
+            env.gen.gen_hand = trans;
+          end
+          env.start;
+        endtask;
+      endclass
+      
+      class test2 extends testbench;
+        trans_2 trans;
+        function new(virtual Alu_interface drv_intf,
+                     virtual Alu_interface mon_intf,
+                     virtual Alu_interface ref_intf);
+          super.new(drv_intf, mon_intf, ref_intf);
+        endfunction 
+        
+        task run();
+          $display("child test 2");
+          env = new(drv_intf, mon_intf, ref_intf);
+          env.build;
+          begin 
+            trans = new();
+            env.gen.gen_hand = trans;
+          end
+          env.start;
+        endtask;
+      endclass
+      
+          
+      class test3 extends testbench;
+        trans_3 trans;
+        function new(virtual Alu_interface drv_intf,
+                     virtual Alu_interface mon_intf,
+                     virtual Alu_interface ref_intf);
+          super.new(drv_intf, mon_intf, ref_intf);
+        endfunction 
+        
+        task run();
+          $display("child test 2");
+          env = new(drv_intf, mon_intf, ref_intf);
+          env.build;
+          begin 
+            trans = new();
+            env.gen.gen_hand = trans;
+          end
+          env.start;
+        endtask
+      endclass
+      
+          
+      class test4 extends testbench;
+        trans_4 trans;
+        function new(virtual Alu_interface drv_intf,
+                     virtual Alu_interface mon_intf,
+                     virtual Alu_interface ref_intf);
+          super.new(drv_intf, mon_intf, ref_intf);
+        endfunction 
+        
+        task run();
+          $display("child test 2");
+          env = new(drv_intf, mon_intf, ref_intf);
+          env.build;
+          begin 
+            trans = new();
+            env.gen.gen_hand = trans;
+          end
+          env.start;
+        endtask
+      endclass
+      
+      class test_regression extends testbench;
+        transaction trans0;
+        trans_1 trans1;
+        trans_2 trans2;
+        trans_3 trans3;
+        trans_4 trans4;
+        
+        function new(virtual Alu_interface drv_intf,
+                     virtual Alu_interface mon_intf,
+                     virtual Alu_interface ref_intf);
+          super.new(drv_intf, mon_intf, ref_intf);
+        endfunction 
+        
+        task run();
+          
+         env = new(drv_intf, mon_intf, ref_intf);
+          
+          env.build;
+        //..............................
+          
+          begin 
+            trans0 = new();
+            env.gen.gen_hand = trans0;
+          end
+          env.start;
+          
+        //...............................
+          
+          begin 
+            trans1 = new();
+            env.gen.gen_hand = trans1;
+          end
+          env.start;
+          
+         //.............................
+          
+          begin 
+            trans2 = new();
+            env.gen.gen_hand = trans2;
+          end
+          env.start;
+          
+         //..............................
+          
+          begin 
+            trans3 = new();
+            env.gen.gen_hand = trans3;
+          end
+          env.start;
+          
+         //..............................
+          
+          begin 
+            trans4 = new();
+            env.gen.gen_hand = trans4;
+          end
+          env.start;
+         
+         //.............................
+        endtask
+      endclass
   //--------------------------------------------------------------------------------------------------------------------------------------------------
  module top;
   logic clock;
@@ -815,10 +1047,12 @@ endclass
   ALU_DESIGN DUT(.INP_VALID(intf.IN_VALID), .OPA(intf.OPA), .OPB(intf.OPB), .CIN(intf.CIN), .CMD(intf.CMD), .COUT(intf.COUT), .OFLOW(intf.OFLOW), .RES(intf.RES), .G(intf.G), .E(intf.E), .L(intf.L), .CLK(clock), .ERR(intf.ERR), .CE(intf.CE), .MODE(intf.MODE), .RST(intf.reset));
   
    testbench test = new(intf.drv_mod, intf.mon_mod, intf.ref_mod);
-  
+   //test_regression set = new(intf.drv_mod, intf.mon_mod, intf.ref_mod);
+   
   initial 
     begin 
       test.run();
+      //set.run();
       $finish();
     end
 endmodule
