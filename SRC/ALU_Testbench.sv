@@ -37,8 +37,9 @@ interface Alu_interface(input logic clock,input logic reset);
   
   clocking Mon_cb @(posedge clock);
     default input #0 output #0;
-     input OPA;
-    input OPB;
+    
+    input CMD;
+    input MODE;
     input RES;
     input ERR;
     input OFLOW;
@@ -169,7 +170,7 @@ class transaction;
   
   constraint a1{CE dist{0:=10,1:=90};}
   constraint a2{IN_VALID dist{[1:3]:=70 , 0:=30};}
-  constraint a3{ CE == 1; IN_VALID == 2'b11;  }
+ // constraint a3{ CE == 1; IN_VALID == 2'b11;  }
   constraint a4{if(MODE == 1) CMD inside{[0:10]};}
   constraint a5{if(MODE	 == 0)CMD inside {[0:13]};}
 
@@ -482,34 +483,27 @@ endclass
   transaction mon_hand;
   virtual Alu_interface.mon_mod mon_intf;
   mailbox #(transaction) mon2scb;
-//   // Covergroup must be declared right after member variables
-//   covergroup monitor_cover;
-//     ERROR  : coverpoint mon_hand.ERR;
-//     RESULT : coverpoint mon_hand.RES { bins result = {[0 : (2**`WIDTH)-1]}; }
-//     COUT   : coverpoint mon_hand.COUT;
-//     OFLOW  : coverpoint mon_hand.OFLOW;
-//     G      : coverpoint mon_hand.G;
-//     E      : coverpoint mon_hand.E;
-//     L      : coverpoint mon_hand.L;
-//   endgroup
+
 
   // Constructor
   function new(mailbox #(transaction) mon2scb, virtual Alu_interface.mon_mod mon_intf);
     begin
     this.mon2scb = mon2scb;
     this.mon_intf = mon_intf;
-   // monitor_cover = new(); // instantiate covergroup
     end
   endfunction
 
   // Task
   task start();
+    int start=1;
+
     repeat(4)@(mon_intf.Mon_cb);
     for (int i = 0; i < `num; i++) begin
       mon_hand = new();
 
       repeat(1)@(mon_intf.Mon_cb);
-      
+      mon_hand.MODE  =mon_intf.Mon_cb.MODE;
+      mon_hand.CMD   =mon_intf.Mon_cb.CMD;
       mon_hand.RES   = mon_intf.Mon_cb.RES;
       mon_hand.ERR   = mon_intf.Mon_cb.ERR;
       mon_hand.COUT  = mon_intf.Mon_cb.COUT;
@@ -517,12 +511,31 @@ endclass
       mon_hand.G     = mon_intf.Mon_cb.G;
       mon_hand.E     = mon_intf.Mon_cb.E;
       mon_hand.L     = mon_intf.Mon_cb.L;
-      mon2scb.put(mon_hand);
+
 
       $display("[%t]Monitor TO Scoreboard: RES=%0d, ERR=%d, COUT=%d, OFLOW=%d, G=%d, E=%d, L=%d opa=%0d opb=%0d",$time,
                 mon_hand.RES, mon_hand.ERR, mon_hand.COUT, mon_hand.OFLOW,
                 mon_hand.G, mon_hand.E, mon_hand.L,mon_hand.OPA,mon_hand.OPB);
-      //monitor_cover.sample();
+           // mon2scb.put(mon_hand);
+      
+              if(start==1  && ((mon_hand.MODE == 1 && mon_hand.CMD == 9 ) || (mon_hand.MODE == 1 && mon_hand.CMD == 10)))
+          begin
+                  repeat(1)@(mon_intf.Mon_cb);
+                  start=0;
+            mon2scb.put(mon_hand);
+          end
+          else
+          begin
+                 // repeat(1)@(mon_intf.Mon_cb);
+                  mon2scb.put(mon_hand);
+          end
+
+
+      if(mon_hand.MODE == 1 && mon_hand.CMD == 9 || mon_hand.MODE == 1 && mon_hand.CMD == 10)
+        repeat(2)@(mon_intf.Mon_cb);
+      else
+        repeat(1)@(mon_intf.Mon_cb);
+
     end
   endtask
 
